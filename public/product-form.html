@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product Form - Inventory Management</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #3f51b5;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      resize: vertical;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    .buttons {
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #303f9f;
+    }
+
+    .cancel-btn {
+      background-color: #f44336;
+    }
+
+    .cancel-btn:hover {
+      background-color: #d32f2f;
+    }
+
+    .error-message {
+      color: #f44336;
+      margin-top: 8px;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Inventory Management</h1>
+  </div>
+
+  <div class="container">
+    <h2 id="form-title">Add New Product</h2>
+    <form id="product-form">
+      <label for="name">Product Name *</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="description">Description</label>
+      <textarea id="description" name="description"></textarea>
+
+      <label for="price">Price (₹) *</label>
+      <input type="number" id="price" name="price" min="0" step="0.01" required />
+
+      <label for="quantity">Quantity *</label>
+      <input type="number" id="quantity" name="quantity" min="0" required />
+
+      <div class="error-message" id="error-message"></div>
+
+      <div class="buttons">
+        <button type="submit">Save</button>
+        <button type="button" class="cancel-btn" onclick="window.location.href='index.html'">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const API = '/api/products';
+    const form = document.getElementById('product-form');
+    const errorMessage = document.getElementById('error-message');
+    const formTitle = document.getElementById('form-title');
+
+    // Get product ID from URL (for edit)
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    // If editing, fetch product data and fill form
+    if (productId) {
+      formTitle.textContent = 'Edit Product';
+      fetch(`${API}/${productId}`)
+        .then(res => res.json())
+        .then(product => {
+          document.getElementById('name').value = product.name;
+          document.getElementById('description').value = product.description || '';
+          document.getElementById('price').value = product.price;
+          document.getElementById('quantity').value = product.quantity;
+        })
+        .catch(() => {
+          errorMessage.textContent = 'Failed to load product details.';
+          errorMessage.style.display = 'block';
+        });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const productData = {
+        name: form.name.value.trim(),
+        description: form.description.value.trim(),
+        price: parseFloat(form.price.value),
+        quantity: parseInt(form.quantity.value, 10),
+      };
+
+      if (!productData.name || isNaN(productData.price) || isNaN(productData.quantity)) {
+        errorMessage.textContent = 'Please fill in all required fields correctly.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      try {
+        const method = productId ? 'PUT' : 'POST';
+        const url = productId ? `${API}/${productId}` : API;
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to save product.');
+        }
+
+        // Redirect back to index page after success
+        window.location.href = 'index.html';
+      } catch (err) {
+        errorMessage.textContent = err.message;
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
